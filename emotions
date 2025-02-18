@@ -1,0 +1,55 @@
+import speech_recognition as sr
+import pyttsx3
+from transformers import pipeline
+
+# Initialize the Hugging Face model for text generation
+generator = pipeline('text-generation', model='gpt2')
+
+# Initialize pyttsx3 for text-to-speech conversion
+engine = pyttsx3.init()
+
+def speak(text):
+    """Convert text to speech and speak it."""
+    engine.say(text)
+    engine.runAndWait()
+
+def listen():
+    """Listen for a voice command and return the recognized text."""
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening...")
+        recognizer.adjust_for_ambient_noise(source)  # Adjust for background noise
+        audio = recognizer.listen(source)
+        try:
+            print("Recognizing...")
+            command = recognizer.recognize_google(audio)
+            print(f"You said: {command}")
+            return command
+        except sr.UnknownValueError:
+            print("Sorry, I did not understand that.")
+            return None
+        except sr.RequestError:
+            print("Sorry, there was a problem with the speech service.")
+            return None
+
+def assistant_bot(prompt):
+    """Generate a response using Hugging Face's text-generation model."""
+    response = generator(prompt, max_length=100, num_return_sequences=1)
+    return response[0]['generated_text']
+
+# Main loop for voice interaction
+print("Voice Assistant Initialized! Say 'exit' to stop.")
+speak("Hello, I am your assistant. How can I help you today?")
+
+while True:
+    user_input = listen()
+    if user_input is None:
+        continue
+    
+    if "exit" in user_input.lower():
+        speak("Goodbye!")
+        break
+
+    bot_response = assistant_bot(user_input)
+    print(f"Bot: {bot_response}")
+    speak(bot_response)
